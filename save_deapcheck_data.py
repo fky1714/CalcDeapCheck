@@ -8,7 +8,7 @@ from datetime import datetime
 
 def setup_driver():
     # Chromeドライバーのセットアップ
-    service = Service(ChromeDriverManager().install())
+    service = Service()
     options = webdriver.ChromeOptions()
     options.add_experimental_option("debuggerAddress", "localhost:9222")  # リモートデバッグポートを指定
     # options.headless = True  # ヘッドレスモードでブラウザを起動
@@ -32,20 +32,24 @@ def get_data_from_pages(base_url):
     driver = setup_driver()
     all_data = pd.DataFrame()
 
-    for i in range(1, 108):
+    for i in range(1, 495):
         url = base_url + str(i)
         print(url)
         driver.get(url)
-        rows = driver.find_elements(By.CSS_SELECTOR, 'table.c-table.-history tr')[1:]  # ヘッダーを除外
-        data = []
-        for i, row in enumerate(rows):
-            cols = row.find_elements(By.CLASS_NAME, 'data')
-            date = cols[0].text.strip()
-            type_ = cols[1].text.strip().replace('\n', '')
-            dep = float(cols[2].text.strip())
-            data.append({'DATE': date, 'TYPE': type_, 'DEP': dep})
-            if i == 4:
-                break
+        try:
+            rows = driver.find_elements(By.CSS_SELECTOR, 'table.c-table.-history tr')[1:]  # ヘッダーを除外
+            data = []
+            for i, row in enumerate(rows):
+                cols = row.find_elements(By.CLASS_NAME, 'data')
+                date = cols[0].text.strip()
+                type_ = cols[1].text.strip().replace('\n', '')
+                dep = float(cols[2].text.strip())
+                data.append({'DATE': date, 'TYPE': type_, 'DEP': dep})
+                if i == 4:
+                    break
+        except:
+            i = i - 1
+            continue
 
         page_data = pd.DataFrame(data)
         all_data = pd.concat([all_data, page_data], ignore_index=True)
@@ -60,7 +64,7 @@ data_df = get_data_from_pages(base_url)
 save_data_to_csv(data_df)
 # 期間指定（例：2024年4月23日から2024年4月23日）
 start_date = datetime(2024, 4, 10)
-end_date = datetime(2024, 4, 23)
+end_date = datetime(2024, 8, 27)
 summed_deps = sum_dep_by_type(data_df, start_date, end_date)
 
 print(summed_deps)
